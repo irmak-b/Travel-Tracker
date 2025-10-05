@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "traceltracker",
+    "name": "Travel Tracker",
     "slug": "traceltracker",
     "version": "1.0.0",
     "orientation": "default",
@@ -20,10 +20,16 @@
         "foregroundImage": "./app/assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.irmakbayram.traceltracker"
     },
     "web": {
       "favicon": "./app/assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "7b2d8b9c-cc0a-4dfd-8f16-ec53645e2294"
+      }
     }
   }
 }

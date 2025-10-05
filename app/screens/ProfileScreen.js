@@ -3,9 +3,15 @@ import { Image, ImageBackground, ScrollView, Text, StyleSheet, View, TouchableOp
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Navbar from '../components/ui/Navbar';
 import { useNavigation } from '@react-navigation/native';
+import { Dimensions } from 'react-native';
+import { Video } from "expo-av";
+
+const { width, height } = Dimensions.get('window');
+
 
 function ProfileScreen() {
-  const navigation = useNavigation(); // ✅ navigation hook
+  const navigation = useNavigation(); 
+  const video = React.useRef(null);
 
   return (
     <SafeAreaView style={styles.box}>
@@ -14,56 +20,63 @@ function ProfileScreen() {
         <ScrollView style={styles.content}>
           <View style={styles.firstContainer}>
             <Text style={styles.texta}>
-              Travel&Tour Tracker'a hoşgeldin👋!
+              You're Welcome to Travel&Tour Tracker 👋!
             </Text> 
             <Text style={styles.textb}>
-              Gezdiğin ve anılarını biriktirmek istediğin her lokasyon için 
-              birer Road Journal 🎫 ...
+              A Road Journal for every location you visit and want to capture your memories🎫 ...
             </Text>
             <Text style={styles.textb}>
-              Ayrıcalıklı seyahat ipuçları alabileceğin AI özelliği 🧭...
+              An AI feature that provides you with exclusive travel tips. 🧭...
             </Text>
             <Text style={styles.textb}>
-              Ve bütçe dostu fiyatlarla, kullanımını bekliyoruz!
+              And all at budget-friendly prices, waiting for you to use!
             </Text>
             <Text style={styles.textb}>
-              Ekranı kaydır ve fırsat dolu paketleri incele ✈️
+              Swipe the screen and explore our offer-packed plans.✈️
             </Text>
           </View>
 
-          {/* Standart Plan → AuthScreen'e yönlendirme */}
+          {/* Standart Plan  AuthScreene yönlendirme */}
           <TouchableOpacity 
             style={styles.conteinersa} 
             onPress={() => navigation.navigate("AuthScreen")}
           >
-            <Text style={styles.texta}> Standart Plan </Text>
+            <Text style={styles.texta}> Standard Plan </Text>
             <Text style={styles.textc}>
-              🧳 Her kıtada 10 journal {"\n"} {"\n"}
-              📒 Her journal'da birer fotoğraf ekleme hakkı {"\n"} {"\n"}
-              🗺️ AI ile 24 saatte 10 kerelik konuşma hakkı {"\n"} {"\n"}
-              Ücretsiz
+                🧳 10 Journal per Continent {"\n"} {"\n"}
+                📒 Add up 1 photo in a journal {"\n"} {"\n"}
+                🗺️ 10 Compass conversations per day within 24 hours {"\n"} {"\n"}
+              For Free 
             </Text>
           </TouchableOpacity>
 
-          <View style={styles.conteinersb}>
-            <Text style={styles.texta}> Ekonomik Plan </Text>
+          
+          <TouchableOpacity 
+            style={styles.conteinersb} 
+            onPress={() => navigation.navigate("EconomyScreen")}
+          >
+            <Text style={styles.texta}> Economy Plan </Text>
             <Text style={styles.textc}>
-              🧳 Her kıtada 25 journal {"\n"} {"\n"}
-              📒 Her journal'da 5 fotoğraf ekleme hakkı {"\n"} {"\n"}
-              🗺️ AI ile sınırsız konuşma hakkı {"\n"} {"\n"}
-              Ayda yalnızca 100₺
+              🧳 25 Journal per Continent {"\n"} {"\n"}
+              📒 Add up 5 photo in a journal{"\n"} {"\n"}
+              🗺️ Unlimited Compass Acces {"\n"} {"\n"}
+              Only for 0.8$ per Month!
             </Text>
-          </View>
+          </TouchableOpacity>
 
-          <View style={styles.conteinersc}>
-            <Text style={styles.texta}>Tam Plan </Text>
+          
+          <TouchableOpacity 
+            style={styles.conteinersc} 
+            onPress={() => navigation.navigate("FullScreen")}
+          >
+            <Text style={styles.texta}>Full Plan </Text>
             <Text style={styles.textc}>
-              🧳 Her kıtada sınırsız journal {"\n"} {"\n"}
-              📒  Her journal'da sınırsız fotoğraf ekleme hakkı {"\n"} {"\n"}
-              🗺️ AI ile 24 saatte sınırsız konuşma hakkı ve ses özelliği {"\n"} {"\n"}
-              Ayda yalnızca 180₺
+              🧳  25 Journal per Continent {"\n"} {"\n"}
+              📒  Add up 15 photo in a journal {"\n"} {"\n"}
+              🗺️ Unlimited Compass Acces {"\n"} {"\n"}
+              Only for 1$ per Month
             </Text>
-          </View>
+          </TouchableOpacity>
         </ScrollView>
       </ImageBackground>
     </SafeAreaView>
@@ -78,12 +91,13 @@ const styles = StyleSheet.create({
   content: { paddingTop: 75, paddingBottom: 20 },
   firstContainer: { 
     backgroundColor: "#bb564b9c", 
-    width: 360, 
-    height: 440, 
+    width: width - 0, 
+    height: height * 0.7, 
     padding: 20, 
     marginBottom: 150,  
-    alignSelf: "flex-start" 
-  },
+    alignSelf: "center" 
+},
+
   conteinersa: {
     width: 280, height: 410,
     backgroundColor:"#357272a4", 

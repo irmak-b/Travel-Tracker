@@ -1,5 +1,5 @@
 // app/screens/AuthScreen.js
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import {
   View,
   Text,
@@ -12,72 +12,96 @@ import {
   Platform
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
 import Navbar from '../components/ui/Navbar';
-
-// 🔹 sadece firebase.js’ten import et
-import { auth, db } from "../firebase";
+import { supabase } from '../supabase';
+import { UserContext } from '../UserContext';
 
 function AuthScreen() {
   const navigation = useNavigation();
+  const { setUser } = useContext(UserContext); // context
   const [mode, setMode] = useState('login'); 
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
 
   const showAlert = (title, msg) => {
-    Alert.alert(title, msg, [{ text: 'Tamam' }], { cancelable: true });
+    Alert.alert(title, msg, [{ text: 'OK' }], { cancelable: true });
   };
 
+  // Kayıt işlemi
   const handleRegister = async () => {
-    if (!username.trim() || !password.trim() || !email.trim()) {
-      showAlert('Hata', 'Kullanıcı adı, parola ve email boş olamaz.');
+    if (!email.trim() || !password.trim() || !name.trim()) {
+      showAlert('Error', 'Name, email, and password cannot be empty.');
       return;
     }
     setLoading(true);
     try {
-      // Firebase Auth ile kullanıcı oluştur
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-
-      // Firestore’a kullanıcı bilgilerini ekle
-      await setDoc(doc(db, 'users', user.uid), {
-        username,
+      const { data, error } = await supabase.auth.signUp({
         email,
-        createdAt: new Date()
+        password,
       });
 
-      await AsyncStorage.setItem('currentUser', user.uid);
-      showAlert('Başarılı', 'Kayıt başarılı! Giriş yapılıyor...');
+      if (error) throw error;
+
+      // authnew tablosuna ekleme (upsert ile)
+      const { error: upsertError } = await supabase
+        .from("authnew")
+        .upsert([{
+          id: data.user.id,
+          email,
+          name,
+          plan_id: null,
+        }]);
+
+      if (upsertError) throw upsertError;
+
+      // AsyncStorage ve context güncelle
+      await setUser(data.user.id, name);
+
+      showAlert('Success', 'Registration successful! Logging in...');
       navigation.replace('Home');
     } catch (error) {
       console.error(error);
-      showAlert('Hata', error.message);
+      showAlert('Error', error.message);
     }
     setLoading(false);
   };
 
+      
+  // Giriş işlemi
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
-      showAlert('Hata', 'Email ve parola boş olamaz.');
+      showAlert('Error', 'Email and password cannot be empty.');
       return;
     }
     setLoading(true);
     try {
-      // Firebase Auth ile giriş
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
 
-      await AsyncStorage.setItem('currentUser', user.uid);
-      showAlert('Başarılı', 'Giriş başarılı.');
+      if (error) throw error;
+
+      // authnew tablosundan ismi çek
+      const { data: userData, error: fetchError } = await supabase
+        .from("authnew")
+        .select("name")
+        .eq("id", data.user.id)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // AsyncStorage ve context güncelle
+      await setUser(data.user.id, userData?.name || '');
+
+      showAlert('Success', 'Login successful.');
       navigation.replace('Home');
     } catch (error) {
       console.error(error);
-      showAlert('Hata', error.message);
+      showAlert('Error', error.message);
     }
     setLoading(false);
   };
@@ -94,24 +118,24 @@ function AuthScreen() {
         style={styles.background}
         resizeMode="cover"
       >
-      <Navbar logoSource={require('../assets/newlogo.png')} title="Travel Tracker" />
+        <Navbar logoSource={require('../assets/newlogo.png')} title="Travel Tracker" />
+        <View style={styles.darkOverlay} />
         <KeyboardAvoidingView 
           style={styles.keyboard} 
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
           <View style={styles.card}>
             <Text style={styles.title}>
-              {mode === 'login' ? 'Giriş Yap' : 'Kayıt Ol'}
+              {mode === 'login' ? 'Log In' : 'Sign Up'}
             </Text>
 
+            {/* Kayıt modunda isim alanı */}
             {mode === 'register' && (
               <TextInput
                 style={styles.input}
-                placeholder="Kullanıcı adı"
-                value={username}
-                onChangeText={setUsername}
-                autoCapitalize="none"
-                autoCorrect={false}
+                placeholder="Name"
+                value={name}
+                onChangeText={(text) => setName(text)}
               />
             )}
 
@@ -127,7 +151,7 @@ function AuthScreen() {
 
             <TextInput
               style={styles.input}
-              placeholder="Parola"
+              placeholder="Password"
               value={password}
               onChangeText={setPassword}
               secureTextEntry
@@ -140,32 +164,23 @@ function AuthScreen() {
               disabled={loading}
             >
               <Text style={styles.buttonText}>
-                {mode === 'login' ? 'Giriş Yap' : 'Kayıt Ol'}
+                {mode === 'login' ? 'Log In' : 'Sıgn Up'}
               </Text>
             </TouchableOpacity>
 
             <View style={styles.switchRow}>
               <Text style={styles.smallText}>
-                {mode === 'login' ? 'Hesabın yok mu?' : 'Zaten hesabın mı var?'}
+                {mode === 'login' ? "Don't have an account?" : 'Already have an account?'}
               </Text>
               <TouchableOpacity 
                 onPress={() => setMode(mode === 'login' ? 'register' : 'login')}
               >
                 <Text style={styles.switchText}>
-                  {mode === 'login' ? ' Kayıt Ol' : ' Giriş Yap'}
+                  {mode === 'login' ? ' Sign Up' : ' Log In'}
                 </Text>
               </TouchableOpacity>
             </View>
 
-            <TouchableOpacity
-              onPress={() => {
-                AsyncStorage.setItem('currentUser', 'guest')
-                  .then(() => navigation.replace('Home'));
-              }}
-              style={styles.guestBtn}
-            >
-              <Text style={styles.guestText}>Misafir Olarak Devam Et</Text>
-            </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
       </ImageBackground>
@@ -178,6 +193,7 @@ export default AuthScreen;
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#0b1220' },
   background: { flex: 1, width: '100%', height: '100%' },
+  darkOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0, 0, 0, 0.16)" },
   keyboard: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 16 },
   card: { width: '100%', maxWidth: 420, backgroundColor: '#357272de', borderRadius: 12, padding: 20, elevation: 4 },
   title: { fontSize: 22, fontWeight: '700', marginBottom: 12, color: '#111' },
@@ -187,6 +203,4 @@ const styles = StyleSheet.create({
   switchRow: { flexDirection: 'row', justifyContent: 'center', marginTop: 12 },
   smallText: { color: '#333' },
   switchText: { color: '#0c2a47ff', fontWeight: '600' },
-  guestBtn: { marginTop: 12, alignItems: 'center' },
-  guestText: { color: '#000000ff', textDecorationLine: 'underline' },
 });

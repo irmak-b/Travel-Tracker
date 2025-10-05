@@ -14,7 +14,7 @@ export default function OnboardingScreen() {
       <Video
         ref={video}
         style={StyleSheet.absoluteFill}
-        source={require("../assets/ilk.mp4")} 
+        source={require("../assets/İlk.mp4")} 
         resizeMode="cover"
         shouldPlay
         isLooping
